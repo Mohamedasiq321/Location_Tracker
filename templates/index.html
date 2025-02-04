@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Location Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Real-Time Location Tracker</h1>
+        <p class="sub-text">Allow access to your location and track in real time.</p>
+
+        <div class="location-box">
+            <p id="location">Fetching location...</p>
+            <button onclick="sendLocation()" class="track-btn">Update & Track</button>
+        </div>
+
+        <div class="toggle-container">
+            <p>Dark Mode:</p>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='javascript/script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Tracking</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Live Tracking</h1>
+        <div id="map" style="width: 100%; height: 500px;"></div>
+    </div>
+
+    <script>
+        let map, marker;
+
+        function initMap(latitude, longitude) {
+            const location = { lat: latitude, lng: longitude };
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 15,
+                center: location
+            });
+
+            marker = new google.maps.Marker({
+                position: location,
+                map: map
+            });
+        }
+
+        function updateLocation() {
+            fetch('/get_location', { method: 'GET' })
+                .then(response => response.json())
+                .then(data => {
+                    const newLat = parseFloat(data.latitude);
+                    const newLng = parseFloat(data.longitude);
+                    marker.setPosition({ lat: newLat, lng: newLng });
+                    map.setCenter({ lat: newLat, lng: newLng });
+                });
+        }
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+            initMap(position.coords.latitude, position.coords.longitude);
+        });
+
+        setInterval(updateLocation, 500000000000000);
+    </script>
+</body>
+</html>
