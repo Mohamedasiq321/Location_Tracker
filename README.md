@@ -5,7 +5,7 @@ It allows **organizations** to track **registered users' locations** in real-tim
 
 ---
 
-## **🌟 Features**
+## ** Features**
 ✅ **Admin Dashboard** – Manage users & track locations  
 ✅ **User Location Tracking** – Users can update their live locations  
 ✅ **Google Maps Integration** – View users' locations on an interactive map  
@@ -14,12 +14,12 @@ It allows **organizations** to track **registered users' locations** in real-tim
 
 ---
 
-## **🚀 Deployment**
+## ** Deployment**
 This project is **deployed on Render** 
 
 ---
 
-## **🛠 Tech Stack**
+## ** Tech Stack**
 - **Backend**: Flask, SQLAlchemy, Flask-Migrate  
 - **Frontend**: HTML, CSS, JavaScript, Bootstrap  
 - **Database**: SQLite / MongoDB  
