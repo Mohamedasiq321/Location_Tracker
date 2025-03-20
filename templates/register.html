@@ -1,0 +1,25 @@
+<form method="POST">
+    <input type="hidden" name="invite_code" value="{{ invite_code }}">
+    
+    <label>Email:</label>
+    <input type="email" name="email" required>
+
+    <label>Password:</label>
+    <input type="password" name="password" required>
+
+    <label for="role">Register as:</label>
+<select name="role" id="role">
+    <option value="user">User</option>
+</select>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has("invite")) {
+        // If no invite code, allow admin registration
+        document.getElementById("role").innerHTML += `<option value="admin">Admin</option>`;
+    }
+</script>
+
+
+    <button type="submit">Register</button>
+</form>

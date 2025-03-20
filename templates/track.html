@@ -3,48 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Location Tracking</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}"></script>
-    <link rel="stylesheet" href="styles.css">
+    <title>Live User Locations</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&callback=initMap" async defer></script>
+    <script>
+        function initMap() {
+            const map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 20.5937, lng: 78.9629 },
+                zoom: 5
+            });
+
+            function fetchUsersLocations() {
+                fetch("/get_users_locations")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.locations.length === 0) {
+                            alert("No users found!");
+                            return;
+                        }
+                        
+                        data.locations.forEach(user => {
+                            const marker = new google.maps.Marker({
+                                position: { lat: user.latitude, lng: user.longitude },
+                                map: map,
+                                title: user.email
+                            });
+
+                            const infoWindow = new google.maps.InfoWindow({
+                                content: `<p><strong>${user.email}</strong></p><p>Lat: ${user.latitude}, Lng: ${user.longitude}</p>`
+                            });
+
+                            marker.addListener("click", () => {
+                                infoWindow.open(map, marker);
+                            });
+                        });
+                    })
+                    .catch(error => console.error("Error fetching locations:", error));
+            }
+
+            fetchUsersLocations();
+            setInterval(fetchUsersLocations, 50000000000000000000);
+        }
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>Live Tracking</h1>
-        <div id="map" style="width: 100%; height: 500px;"></div>
-    </div>
-
-    <script>
-        let map, marker;
-
-        function initMap(latitude, longitude) {
-            const location = { lat: latitude, lng: longitude };
-            map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 15,
-                center: location
-            });
-
-            marker = new google.maps.Marker({
-                position: location,
-                map: map
-            });
-        }
-
-        function updateLocation() {
-            fetch('/get_location', { method: 'GET' })
-                .then(response => response.json())
-                .then(data => {
-                    const newLat = parseFloat(data.latitude);
-                    const newLng = parseFloat(data.longitude);
-                    marker.setPosition({ lat: newLat, lng: newLng });
-                    map.setCenter({ lat: newLat, lng: newLng });
-                });
-        }
-
-        navigator.geolocation.getCurrentPosition(function (position) {
-            initMap(position.coords.latitude, position.coords.longitude);
-        });
-
-        setInterval(updateLocation, 500000000000000);
-    </script>
+    <h1>Live User Locations</h1>
+    <div id="map" style="width: 100%; height: 500px;"></div>
+    <br>
+    <button onclick="location.href='/admin_dashboard'">Back to Dashboard</button>
 </body>
 </html>
