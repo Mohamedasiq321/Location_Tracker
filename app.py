@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+from math import radians, cos, sin, asin, sqrt
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
@@ -11,6 +12,7 @@ app.secret_key = "your_secret_key"
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'instance', 'users.db')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -32,18 +34,25 @@ class Location(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
-    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+class TargetDestination(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    reached = db.Column(db.Boolean, default=False)  # To track if the user reached the destination
 
 # Initialize Database
 with app.app_context():
     db.create_all()
 
-# ✅ Home Route
+# Home Route
 @app.route("/")
 def home():
     return redirect(url_for("login"))
 
-# ✅ Admin Registration Route
+# Admin Registration Route
 @app.route("/admin_register", methods=["GET", "POST"])
 def admin_register():
     if request.method == "POST":
@@ -51,22 +60,20 @@ def admin_register():
         password = request.form["password"]
         org_name = request.form["org_name"]
 
-        # Create organization
-        org = Organization(name=org_name, invite_code=f"invite-{org_name.lower()}")
-        db.session.add(org)
-        db.session.commit()
+        org = Organization.query.filter_by(name=org_name).first()
+        if not org:
+            return "Organization does not exist!", 400
 
-        # Create admin user
         hashed_password = generate_password_hash(password)
-        admin = User(email=email, password=hashed_password, role="admin", organization_id=org.id)
-        db.session.add(admin)
+        new_admin = User(email=email, password=hashed_password, role="admin", organization_id=org.id)
+        db.session.add(new_admin)
         db.session.commit()
 
         return redirect(url_for("login"))
 
     return render_template("admin_register.html")
 
-# ✅ Login Route
+# Login Route
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -86,59 +93,25 @@ def login():
         session["role"] = user.role
         session["org_id"] = user.organization_id
 
-        return redirect(url_for("admin_dashboard") if user.role == "admin" else url_for("dashboard"))
+        return redirect(url_for("admin_dashboard" if user.role == "admin" else "user_dashboard"))
 
     return render_template("login.html")
 
-# ✅ User Dashboard
-@app.route("/dashboard")
-def dashboard():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    return render_template("user_dashboard.html")
-
-# ✅ Admin Dashboard
+# Admin Dashboard
 @app.route("/admin_dashboard")
 def admin_dashboard():
     if "user_id" not in session or session.get("role") != "admin":
         return redirect(url_for("login"))
     return render_template("admin_dashboard.html")
 
-# ✅ Generate Invite Link (Admin Only)
-@app.route("/get_invite_link")
-def get_invite_link():
-    if "user_id" not in session or session.get("role") != "admin":
-        return jsonify({"error": "Unauthorized"}), 401
-
-    admin_user = User.query.get(session["user_id"])
-    org = Organization.query.get(admin_user.organization_id)
-
-    invite_link = f"http://127.0.0.1:5000/register?invite={org.invite_code}"
-    return jsonify({"invite_link": invite_link})
-
-# ✅ Register Users with Invite Code
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    invite_code = request.args.get("invite")
-
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-
-        org = Organization.query.filter_by(invite_code=invite_code).first()
-        if not org:
-            return "Invalid invite link!", 400
-
-        hashed_password = generate_password_hash(password)
-        new_user = User(email=email, password=hashed_password, role="user", organization_id=org.id)
-        db.session.add(new_user)
-        db.session.commit()
-
+# User Dashboard
+@app.route("/user_dashboard")
+def user_dashboard():
+    if "user_id" not in session:
         return redirect(url_for("login"))
+    return render_template("user_dashboard.html")
 
-    return render_template("register.html", invite_code=invite_code)
-
-# ✅ Update User Location
+# Update User Location
 @app.route("/update_location", methods=["POST"])
 def update_location():
     if "user_id" not in session:
@@ -147,23 +120,42 @@ def update_location():
     data = request.json
     latitude = data.get("latitude")
     longitude = data.get("longitude")
+    user_id = session["user_id"]
 
-    new_location = Location(user_id=session["user_id"], latitude=latitude, longitude=longitude)
+    # Save the user's location
+    new_location = Location(user_id=user_id, latitude=latitude, longitude=longitude)
     db.session.add(new_location)
-    db.session.commit()
 
+    # Check if user reached their assigned target
+    target = TargetDestination.query.filter_by(user_id=user_id, reached=False).first()
+    if target:
+        distance = haversine_distance(latitude, longitude, target.latitude, target.longitude)
+        if distance < 0.05:  # If within 50 meters
+            target.reached = True
+            db.session.commit()
+            notify_admin(user_id, latitude, longitude)
+
+    db.session.commit()
     return jsonify({"message": "Location updated!"})
 
-# ✅ Admin View: Track Users' Locations
-@app.route("/track_users")
-def track_users():
+# Set Target Destination (Admin Only)
+@app.route("/set_target_destination", methods=["POST"])
+def set_target_destination():
     if "user_id" not in session or session.get("role") != "admin":
-        return redirect(url_for("login"))
+        return jsonify({"error": "Unauthorized"}), 401
 
-    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
-    return render_template("track.html", api_key=api_key)
+    data = request.json
+    user_id = data.get("user_id")
+    latitude = data.get("latitude")
+    longitude = data.get("longitude")
 
-# ✅ API: Get Users' Locations (Admin Only)
+    target = TargetDestination(user_id=user_id, latitude=latitude, longitude=longitude)
+    db.session.add(target)
+    db.session.commit()
+
+    return jsonify({"message": "Target destination set successfully!"})
+
+# Get All Users' Locations (Admin Only)
 @app.route("/get_users_locations", methods=["GET"])
 def get_users_locations():
     if "user_id" not in session or session.get("role") != "admin":
@@ -175,13 +167,32 @@ def get_users_locations():
         .all()
     )
 
-    return jsonify({"locations": [{"email": email, "latitude": lat, "longitude": lon} for email, lat, lon in locations]})
+    location_data = [
+        {"email": email, "latitude": lat, "longitude": lon}
+        for email, lat, lon in locations
+    ]
 
-# ✅ Logout
+    return jsonify({"locations": location_data})
+
+# Logout Route
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
+# Utility Functions
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # Radius of Earth in kilometers
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    return R * c  # Distance in km
+
+def notify_admin(user_id, latitude, longitude):
+    admin_users = User.query.filter_by(role="admin").all()
+    for admin in admin_users:
+        print(f"🔔 User {user_id} reached the target at ({latitude}, {longitude})! Admin {admin.email} notified.")
 
 if __name__ == "__main__":
     app.run(debug=True)

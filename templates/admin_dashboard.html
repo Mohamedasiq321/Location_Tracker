@@ -4,17 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        button { font-size: 20px; padding: 10px 20px; margin: 10px; cursor: pointer; }
-    </style>
+    <script>
+        function assignTarget() {
+            const userEmail = prompt("Enter the user's email to assign a target:");
+            if (!userEmail) return;
+
+            const latitude = prompt("Enter the target latitude:");
+            const longitude = prompt("Enter the target longitude:");
+            if (!latitude || !longitude) {
+                alert("Latitude and longitude are required!");
+                return;
+            }
+
+            fetch('/set_target_destination', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmail, latitude: parseFloat(latitude), longitude: parseFloat(longitude) })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => alert("Error setting target destination."));
+        }
+    </script>
 </head>
 <body>
     <h1>Admin Dashboard</h1>
+    
     <h2>Select an Action:</h2>
-
-    <button onclick="location.href='{{ url_for('track_users') }}'">Track Users</button>
-    <button onclick="location.href='{{ url_for('get_invite_link') }}'">Invite Users</button>
-    <button onclick="location.href='{{ url_for('logout') }}'">Logout</button>
+    
+    <button onclick="location.href='/track_users'">Track Users</button>
+    <button onclick="location.href='/get_invite_link'">Invite Users</button>
+    <button onclick="assignTarget()">Assign Target Destination</button>
+    <button onclick="location.href='/logout'">Logout</button>
 </body>
 </html>
