@@ -1,25 +1,28 @@
-<form method="POST">
-    <input type="hidden" name="invite_code" value="{{ invite_code }}">
-    
-    <label>Email:</label>
-    <input type="email" name="email" required>
-
-    <label>Password:</label>
-    <input type="password" name="password" required>
-
-    <label for="role">Register as:</label>
-<select name="role" id="role">
-    <option value="user">User</option>
-</select>
-
-<script>
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has("invite")) {
-        // If no invite code, allow admin registration
-        document.getElementById("role").innerHTML += `<option value="admin">Admin</option>`;
-    }
-</script>
-
-
-    <button type="submit">Register</button>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-4 shadow-lg">
+        <h2 class="text-center mb-3">User Registration</h2>
+        <form method="POST" action="/register">
+            <input type="hidden" name="invite" value="{{ invite_code }}">
+            <div class="mb-3">
+                <label class="form-label" for="email">Email:</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="password">Password:</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Register</button>
+        </form>
+    </div>
+</body>
+</html>

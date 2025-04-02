@@ -6,39 +6,26 @@
     <title>User Dashboard</title>
 </head>
 <body>
-    <h2>User Dashboard</h2>
-    <p>Welcome, User!</p>
+    <h1>User Dashboard</h1>
 
-    <h3>Your Current Location</h3>
-    <p id="location">Unknown</p>
     <button onclick="updateLocation()">Update Location</button>
-
-    <br><br>
-    <button onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
+    <button onclick="location.href='/logout'">Logout</button>
 
     <script>
         function updateLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function (position) {
-                        fetch("{{ url_for('update_location') }}", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude,
-                            }),
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            document.getElementById("location").innerText = `Latitude: ${data.latitude}, Longitude: ${data.longitude}`;
-                        })
-                        .catch(error => console.error("Error:", error));
-                    }
-                );
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
+            navigator.geolocation.getCurrentPosition((position) => {
+                fetch("/update_location", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    })
+                })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => alert("Error updating location"));
+            });
         }
     </script>
 </body>

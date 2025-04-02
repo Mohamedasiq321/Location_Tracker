@@ -4,28 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <script>
-        function assignTarget() {
-            const userEmail = prompt("Enter the user's email to assign a target:");
-            if (!userEmail) return;
-
-            const latitude = prompt("Enter the target latitude:");
-            const longitude = prompt("Enter the target longitude:");
-            if (!latitude || !longitude) {
-                alert("Latitude and longitude are required!");
-                return;
-            }
-
-            fetch('/set_target_destination', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: userEmail, latitude: parseFloat(latitude), longitude: parseFloat(longitude) })
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(error => alert("Error setting target destination."));
-        }
-    </script>
 </head>
 <body>
     <h1>Admin Dashboard</h1>
@@ -34,7 +12,39 @@
     
     <button onclick="location.href='/track_users'">Track Users</button>
     <button onclick="location.href='/get_invite_link'">Invite Users</button>
-    <button onclick="assignTarget()">Assign Target Destination</button>
     <button onclick="location.href='/logout'">Logout</button>
+
+    <h2>Set Target Destination</h2>
+    <form id="targetForm">
+        <label for="user_id">Select User:</label>
+        <select id="user_id" name="user_id">
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.email }}</option>
+            {% endfor %}
+        </select>
+        <label for="latitude">Latitude:</label>
+        <input type="text" id="latitude" name="latitude" required>
+        <label for="longitude">Longitude:</label>
+        <input type="text" id="longitude" name="longitude" required>
+        <button type="submit">Set Target</button>
+    </form>
+
+    <script>
+        document.getElementById("targetForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            const user_id = document.getElementById("user_id").value;
+            const latitude = document.getElementById("latitude").value;
+            const longitude = document.getElementById("longitude").value;
+
+            fetch("/set_target_destination", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id, latitude, longitude })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => alert("Error setting target destination"));
+        });
+    </script>
 </body>
 </html>
