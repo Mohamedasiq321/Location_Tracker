@@ -25,5 +25,5 @@ This project is **deployed on Render**
 - **Database**: SQLite / MongoDB  
 - **Deployment**: Render  
 
----
-Developed with ❤️ by Mohamed Asiq N
+
+
