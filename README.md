@@ -1,6 +1,6 @@
 Location Tracker 
 
-This is a MERN (MongoDB, Express.js, React, Node.js) + Flask based Real-Time Location Tracking System.  
+This is a (MongoDB, Express.js, React, Node.js) + Flask based Real-Time Location Tracking System.  
 It allows organizations to track registered users' locations in real-time.  
 
 Features
